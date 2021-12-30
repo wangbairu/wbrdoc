@@ -596,6 +596,358 @@ public class MyApplication {
 3、您需要通过在@Configuration类中添加@EnableAutoConfiguration或@SpringBootApplication注释来选择自动配置。
 ```
 
+**4.1 Gradually Replacing Auto-configuration **
+
+```
+1、自动配置是非侵入性的。
+2、在任何时候，您都可以开始定义自己的配置来替换自动配置的特定部分。
+3、例如，如果您添加自己的DataSource bean，默认的嵌入式数据库支持就会后退。
+```
+
+**4.2 Disabling Specific Auto-configuration Classes**
+
+```
+如果你发现某个你不想要的自动配置类正在被应用，你可以使用@SpringBootApplication的exclude属性来禁用它们，如下所示:
+```
+
+```
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
+public class MyApplication {
+
+}
+```
+
+```
+1、如果类不在类路径上，则可以使用“annotation”的“excludeName”属性，并指定完全限定名。
+2、如果你更喜欢使用@EnableAutoConfiguration而不是@SpringBootApplication, exclude和excludeName也是可用的。
+3、最后，您还可以使用spring.autoconfiguration.exclude属性来控制要排除的自动配置类列表。
+```
+
+**5. Spring Beans and Dependency Injection**
+
+```
+1、您可以自由地使用任何标准Spring Framework技术来定义bean及其注入的依赖项。
+2、我们通常建议使用构造函数注入来连接依赖和@ComponentScan来查找bean。
+3、如果您按照上面建议的方式构造代码(将应用程序类定位在顶级包中)，您可以不带任何参数添加@ComponentScan或使用隐式包含它的@SpringBootApplication注释。（注：@SpringBootApplication中包含有@ComponentScan）
+4、您的所有应用程序组件(@Component、@Service、@Repository、@Controller，以及其他)都自动注册为Spring bean。（所谓的组件其实就是一个类）
+```
+
+- 下面的例子展示了一个@Service Bean，它使用构造函数注入来获得一个所需的RiskAssessor Bean:
+
+```java
+@Service
+public class MyAccountService implements AccountService {
+
+    private final RiskAssessor riskAssessor;
+
+    public MyAccountService(RiskAssessor riskAssessor) {
+        this.riskAssessor = riskAssessor;
+    }
+
+    // ...
+
+}
+```
+
+- 如果一个bean有多个构造函数，你需要用@Autowired标记你想让Spring使用的构造函数:
+
+```java
+@Service
+public class MyAccountService implements AccountService {
+
+    private final RiskAssessor riskAssessor;
+
+    private final PrintStream out;
+
+    @Autowired
+    public MyAccountService(RiskAssessor riskAssessor) {
+        this.riskAssessor = riskAssessor;
+        this.out = System.out;
+    }
+
+    public MyAccountService(RiskAssessor riskAssessor, PrintStream out) {
+        this.riskAssessor = riskAssessor;
+        this.out = out;
+    }
+
+    // ...
+
+}
+```
+
+**6. Using the @SpringBootApplication Annotation**
+
+```
+1、许多Spring Boot开发者喜欢他们的应用使用自动配置、组件扫描，并且能够在他们的“应用类”上定义额外的配置。
+2、一个@SpringBootApplication注释可以用来启用这三个特性，即:
+   （1）@EnableAutoConfiguration:启用Spring Boot的自动配置机制；
+   （2）@ComponentScan:在应用程序所在的包上启用@Component scan；
+   （3）@SpringBootConfiguration:允许在上下文中注册额外的bean，或者导入额外的配置类；
+```
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication // same as @SpringBootConfiguration @EnableAutoConfiguration
+                        // @ComponentScan
+public class MyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+```
+1、这些特性都不是强制性的，您可以选择用它启用的任何特性来替换这个单一的注释。
+2、例如，你可能不想在你的应用程序中使用组件扫描或配置属性扫描：
+```
+
+```java
+@SpringBootConfiguration(proxyBeanMethods = false)
+@EnableAutoConfiguration
+@Import({ SomeConfiguration.class, AnotherConfiguration.class })
+public class MyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+
+}
+
+在这个例子中，MyApplication和其他任何Spring Boot应用程序一样，除了带@ component注释的类和带@ configurationproperties注释的类不会自动检测到，用户定义的bean会显式导入(参见@Import)。
+```
+
+
+
+**7. Running Your Application**
+
+```
+1、将应用程序打包为jar并使用嵌入式HTTP服务器的最大优点之一是，您可以像运行其他任何应用程序一样，在任何地方运行您的应用程序。
+```
+
+**7.1. Running from an IDE**
+
+```
+1、您可以从IDE中作为Java应用程序运行Spring Boot应用程序。
+2、但是，首先需要导入项目。
+3、导入步骤因IDE和构建系统的不同而不同。
+4、大多数ide都可以直接导入Maven项目。
+5、如果你不能直接将你的项目导入到你的IDE中，你可以使用一个构建插件来生成IDE元数据。Maven为Eclipse和IDEA提供了插件。Gradle为各种ide提供了插件。
+```
+
+**7.2. Running as a Packaged Application**
+
+- 如果你使用Spring Boot Maven或Gradle插件来创建一个可执行jar文件，你可以使用**java -jar**运行你的应用程序，如下所示:
+
+```java
+$ java -jar target/myapplication-0.0.1-SNAPSHOT.jar
+```
+
+- 也可以在启用远程调试支持的情况下运行打包的应用程序。这样做可以将调试器附加到打包的应用程序中，如下所示:
+
+```java
+$ java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=n -jar target/myapplication-0.0.1-SNAPSHOT.jar
+```
+
+
+
+**7.3. Using the Maven Plugin**
+
+```
+1、Spring Boot Maven插件包含一个 run 目标，可以用来快速编译和运行你的应用程序。
+2、应用程序以exploded 的形式运行，就像它们在IDE中所做的那样。
+3、下面的例子展示了一个典型的Maven命令来运行Spring Boot应用程序:
+
+	$ mvn spring-boot:run
+```
+
+**7.4. Using the Gradle Plugin**
+
+```
+1、Spring Boot Gradle插件也包括一个bootRun任务，它也可以被用来以exploded的形式运行你的应用程序。
+2、当你应用org.springframework.boot和java插件时，就会添加bootRun任务，如下所示:
+
+	$ gradle bootRun
+```
+
+**8. Developer Tools**
+
+```
+1、Spring Boot包括一组额外的工具，可以使应用程序开发体验更愉快一些。
+2、spring-boot-devtools模块可以包含在任何项目中，以提供额外的development-time特性。
+3、要包含对devtools的支持，需要将模块依赖关系添加到构建中，如下Maven和Gradle的清单所示:
+```
+
+```java
+Maven:
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <optional>true</optional>
+    </dependency>
+</dependencies>
+    
+Gradle:
+
+dependencies {
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+}
+```
+
+- 注意
+
+```java
+当运行完全打包的应用程序时，开发人员工具会自动禁用。如果你的应用程序是从java -jar启动的，或者是从一个特殊的类加载器启动的，那么它就被认为是一个“生产应用程序”。你可以通过使用spring.devtools.restart.enabled系统属性来控制这种行为。要启用devtools，不管用于启动应用程序的类加载器是什么，设置-Dspring.devtools.restart.enabled=true系统属性。在运行devtools会带来安全风险的生产环境中，不能这样做。要禁用devtools，请排除该依赖或设置
+-Dspring.devtools.restart.enabled=false系统属性。
+```
+
+- 提示
+
+```
+1、在Maven中将依赖标记为可选的，或者在Gradle中使用developmentOnly配置(如上所示)，可以防止devtools被传递地应用到使用你项目的其他模块上。
+2、默认情况下，重新打包的归档文件不包含devtools。如果您想使用某个远程devtools特性，则需要包含它。
+3、当使用Maven插件时，将excludeDevtools属性设置为false。
+4、当使用Gradle插件时，将任务的类路径配置为包含developmentOnly配置。
+```
+
+[热部署](https://www.jianshu.com/p/de544b13b9d5)
+
+**8.1. Property Defaults**
+
+```java
+1、Spring Boot支持的几个库都使用缓存来提高性能。
+2、例如，模板引擎缓存已编译的模板，以避免重复解析模板文件。
+3、此外，当提供静态资源时，Spring MVC可以向响应添加HTTP缓存头信息。
+4、虽然缓存在生产环境中非常有益，但在开发过程中可能会适得其反，使您无法看到刚才在应用程序中所做的更改。
+5、因此，spring-boot-devtools默认禁用缓存选项。
+6、缓存选项通常由application.properties文件设置。
+7、例如，Thymeleaf 提供了spring.thyymleaf.cache属性。
+8、spring-boot-devtools模块不需要手动设置这些属性，而是自动应用合理的 development-time 配置。
+9、因为您在开发Spring MVC和Spring WebFlux应用程序时需要更多关于web请求的信息，developer tools建议您为web日志组启用DEBUG日志记录。
+10、这将为您提供关于传入请求、哪个处理程序正在处理它、响应结果和其他细节的信息。
+11、如果希望记录所有请求细节(包括潜在的敏感信息)，可以打开spring.mvc.log-request-details或spring.codec.log-request-details配置属性。
+12、如果你不想应用默认属性，你可以在你的application.properties中将spring.devtools.add-properties设置为false。
+13、关于devtools应用的属性的完整列表，请参见DevToolsPropertyDefaultsPostProcessor。
+```
+
+[DevToolsPropertyDefaultsPostProcessor](https://github.com/spring-projects/spring-boot/blob/v2.6.2/spring-boot-project/spring-boot-devtools/src/main/java/org/springframework/boot/devtools/env/DevToolsPropertyDefaultsPostProcessor.java)
+
+**8.2. Automatic Restart**
+
+```
+1、只要类路径上的文件发生变化，使用spring-boot-devtools的应用程序就会自动重启。
+2、当在IDE中工作时，这可能是一个有用的特性，因为它为代码更改提供了一个非常快速的反馈循环。
+3、默认情况下，类路径中指向目录的任何条目都将被监视以查看是否有更改。
+4、注意，某些资源，如静态资产和视图模板，不需要重新启动应用程序。
+5、当DevTools监视类路径资源时，触发重新启动的唯一方法是更新类路径。
+6、你更新类路径的方式取决于你使用的IDE:
+7、在IntelliJ IDEA中，构建项目(Build +→+ Build project)也有同样的效果。
+```
+
+- 提示
+
+```
+1、如果你正在使用构建插件使用Maven或Gradle重新启动，你必须让fork设置为enabled。
+2、Spring Boot提供的重启技术通过使用两个类加载器来工作。不会更改的类(例如，来自第三方jar文件的类)被装入一个基类装入器。您正在积极开发的类被装入一个重新启动的类装入器中。当应用程序重新启动时，将丢弃重新启动类加载器，并创建一个新的类加载器。这种方法意味着应用程序重启通常比“冷启动”快得多，因为基类加载器已经可用并被填充。
+3、如果您发现重新启动应用程序的速度不够快，或者遇到了类加载问题，您可以考虑重新加载ZeroTurnaround的JRebel等技术。这些方法是在类加载时重写它们，使它们更易于重新加载。
+```
+
+
+
+**8.2.1. Logging changes in condition evaluation**
+
+```
+1、默认情况下，每次应用程序重新启动时，都会记录一个显示条件评估增量的报告。
+2、当您进行诸如添加或删除bean以及设置配置属性等更改时，该报告将显示对应用程序的自动配置的更改。
+3、要禁用报告的日志记录，请设置以下属性:
+
+	spring.devtools.restart.log-condition-evaluation-delta=false
+```
+
+**8.2.2. Excluding Resources**
+
+```
+1、某些资源在被更改时并不一定需要触发重新启动。
+2、例如，可以就地编辑Thymeleaf模板。
+3、默认情况下，在/META-INF/maven、/META-INF/resources、/resources、/static、/public或/templates中更改资源不会触发重启，但会触发live reload。
+4、如果你想定制这些排除项，你可以使用spring.devtools.restart.exclude属性。
+5、例如，要只排除/static和/public，你需要设置以下属性:
+
+	spring.devtools.restart.exclude=static/**,public/**
+6、如果你想保留这些默认值并添加额外的排除项，请改用spring.devtools.restart.additional-exclude属性。
+```
+
+**8.2.3. Watching Additional Paths**
+
+```
+1、当对不在类路径中的文件进行更改时，您可能希望重新启动或重新加载应用程序。
+2、要做到这一点，请使用spring.devtools.restart.additional-paths属性来配置额外的路径来监视其更改。
+3、您可以使用前面描述的spring.devtools.restart.exclude属性来控制附加路径下的更改是触发完全重启还是动态重新加载（ live reload）。
+```
+
+**8.2.4. Disabling Restart**
+
+```
+1、如果不想使用重启特性，可以使用spring.devtools.restart.enabled属性来禁用它。
+2、在大多数情况下，您可以在application.properties中设置此属性(这样做仍然会初始化重新启动的类加载器，但它不会监视文件更改)
+3、如果你需要完全禁用重启支持(例如，因为它不能与特定的库一起工作)，你需要在调用SpringApplication.run(…)之前将spring.devtools.restart.enabled System属性设置为false，如下所示:
+```
+
+```java
+@SpringBootApplication
+public class MyApplication {
+
+    public static void main(String[] args) {
+        System.setProperty("spring.devtools.restart.enabled", "false");
+        SpringApplication.run(MyApplication.class, args);
+    }
+
+}
+```
+
+**8.2.5. Using a Trigger File**
+
+```
+1、如果您使用的IDE不断编译已更改的文件，那么您可能希望仅在特定时间触发重启。
+2、要做到这一点，你可以使用一个“trigger file”，这是一个特殊的文件，当你想真正触发重启检查时，必须修改它。
+3、任何对文件的更新都会触发检查，但是只有当Devtools检测到它有一些事情要做时才会重启。
+4、要使用触发器文件，请将spring.devtools.restart.trigger-file属性设置为触发器文件的名称(不包括任何路径)。
+5、触发器文件必须出现在类路径的某个地方。
+```
+
+- 例如，如果你有一个结构如下的项目:
+
+```
+src
++- main
+   +- resources
+      +- .reloadtrigger
+```
+
+- 那么你的trigger-file属性将是:
+
+```
+spring.devtools.restart.trigger-file=.reloadtrigger
+```
+
+- 现在只会在src/main/resources/.reloadtrigger更新是重启。
+- 您可能希望将spring.devtools.restart.trigger-file设置为全局设置，以便所有项目都以相同的方式运行。
+
+```
+1、有些ide有一些特性，可以让您不必手动更新触发器文件。
+2、Eclipse和IntelliJ IDEA(旗舰版)都有这样的支持。
+3、使用Spring Tools，你可以在控制台视图中使用“reload”按钮(只要你的触发器文件名为.reloadtrigger)
+4、。
+```
+
+**8.2.6. Customizing the Restart Classloader**
+
+
+
 ## Core Features
 
 - Overview
