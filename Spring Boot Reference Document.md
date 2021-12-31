@@ -1,3 +1,17 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Spring Boot Reference Document
 
 ## Getting Started
@@ -941,10 +955,76 @@ spring.devtools.restart.trigger-file=.reloadtrigger
 1、有些ide有一些特性，可以让您不必手动更新触发器文件。
 2、Eclipse和IntelliJ IDEA(旗舰版)都有这样的支持。
 3、使用Spring Tools，你可以在控制台视图中使用“reload”按钮(只要你的触发器文件名为.reloadtrigger)
-4、。
 ```
 
 **8.2.6. Customizing the Restart Classloader**
+
+```xml
+1、重启功能是通过使用两个类加载器来实现的。
+2、对于大多数应用程序，这种方法工作得很好。
+3、然而，它有时会导致类加载问题。
+4、默认情况下，IDE中任何打开的项目都是用“restart”类加载器加载的，任何常规的.jar文件都是用“base”类加载器加载的。
+5、如果您在一个多模块项目中工作，并且不是每个模块都被导入到IDE中，那么您可能需要定制一些东西。
+6、为此，您可以创建一个META-INF/spring-devtools.properties文件。
+7、这个spring-devtools.properties文件可以包含以restart.exclude和restart.include为前缀的属性。
+8、include元素是应该上拉到“restart”类加载器中的项，exclude元素是应该下拉到“base”类加载器中的项。
+9、该属性的值是应用于类路径的正则表达式，如下例所示:
+
+restart.exclude.companycommonlibs=/mycorp-common-[\\w\\d-\\.]+\\.jar
+restart.include.projectcommon=/mycorp-myproj-[\\w\\d-\\.]+\\.jar
+
+10、所有属性键必须是唯一的。属性以restart.include或restart.exclude开头。
+11、所有在“类路径”上的META-INF/spring-devtools.properties会被加载。
+12、您可以将文件打包到项目内部或项目使用的库中。
+```
+
+**8.2.7. Known Limitations**
+
+```
+1、对于使用标准ObjectInputStream反序列化的对象，重启功能不能很好地工作。
+2、如果你需要反序列化数据，你可能需要结合使用Spring的ConfigurableObjectInputStream和Thread.currentThread(). getcontextclassloader()。
+3、不幸的是，一些第三方库在反序列化时没有考虑“上下文类加载器”（context classloader）。
+4、如果您发现这样的问题，您需要向原始作者请求修复。
+```
+
+
+
+**8.3. LiveReload**
+
+```
+1、spring-boot-devtools模块包括一个嵌入式LiveReload服务器，当资源发生改变时，可以使用它来触发浏览器刷新。
+2、LiveReload浏览器扩展是对Chrome, Firefox和Safari免费有效的。
+3、如果你不想在应用程序运行时启动liverload服务器，你可以将spring.devtools.liverload.enabled属性设置为false。
+4、你一次只能运行一个liverload服务器。
+5、在启动应用程序之前，确保没有其他liverload服务器正在运行。
+6、如果你从IDE启动多个应用程序，只有第一个应用程序支持liverload。
+```
+
+**8.4. Global Settings**
+
+```
+1、您可以通过将以下任何一个文件添加到$HOME/.config/spring-boot 文件夹中，以此来配置全局devtools设置。
+（1）spring-boot-devtools.properties
+
+（2）spring-boot-devtools.yaml
+
+（3）spring-boot-devtools.yml
+
+2、添加到这些文件中的任何属性都适用于您机器上使用devtools的所有Spring Boot应用程序。
+3、例如，要使用触发器文件来配置重启，你需要在spring-boot-devtools文件中添加以下属性:
+
+	spring.devtools.restart.trigger-file=.reloadtrigger
+	
+4、默认情况下，$HOME是用户的主目录。
+5、要自定义这个位置，请设置SPRING_DEVTOOLS_HOME环境变量或spring.devtools.home系统属性。
+6、如果在$HOME/.config/spring-boot中没有找到devtools配置文件。会在$HOME目录的根目录中搜索.spring-boot-devtools.properties文件。
+```
+
+**8.4.1. Configuring File System Watcher**
+
+```
+1、FileSystemWatcher的工作方式是，以一定的时间间隔轮询类的变化，
+```
 
 
 
@@ -955,6 +1035,85 @@ spring.devtools.restart.trigger-file=.reloadtrigger
 ```
 配置文件、日志记录、安全、缓存、Spring集成、测试等等。
 ```
+
+```
+1、本节将详细介绍Spring Boot。
+2、在这里，您可以了解您可能想要使用和定制的关键特性。
+```
+
+**1. SpringApplication**
+
+```
+1、SpringApplication类提供了一种方便的方式来引导一个从main()方法启动的Spring应用程序。
+2、在很多情况下，你可以委托给静态的SpringApplication.run方法，如下例所示:
+```
+
+```java
+@SpringBootApplication
+public class MyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+
+}
+```
+
+- 当你的应用程序启动时，你应该会看到类似如下的输出:
+
+```java
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::   v2.6.2
+
+2021-02-03 10:33:25.224  INFO 17321 --- [           main] o.s.b.d.s.s.SpringApplicationExample    : Starting SpringApplicationExample using Java 1.8.0_232 on mycomputer with PID 17321 (/apps/myjar.jar started by pwebb)
+2021-02-03 10:33:25.226  INFO 17900 --- [           main] o.s.b.d.s.s.SpringApplicationExample    : No active profile set, falling back to default profiles: default
+2021-02-03 10:33:26.046  INFO 17321 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2021-02-03 10:33:26.054  INFO 17900 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2021-02-03 10:33:26.055  INFO 17900 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.41]
+2021-02-03 10:33:26.097  INFO 17900 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2021-02-03 10:33:26.097  INFO 17900 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 821 ms
+2021-02-03 10:33:26.144  INFO 17900 --- [           main] s.tomcat.SampleTomcatApplication         : ServletContext initialized
+2021-02-03 10:33:26.376  INFO 17900 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2021-02-03 10:33:26.384  INFO 17900 --- [           main] o.s.b.d.s.s.SpringApplicationExample    : Started SampleTomcatApplication in 1.514 seconds (JVM running for 1.823)
+```
+
+```
+1、默认情况下，会显示INFO日志消息，包括一些相关的启动细节，比如启动应用程序的用户。
+2、如果您需要设置除INFO之外的日志级别，请参见 Log Levels进行设置。
+3、应用程序版本是使用来自主应用程序类包的实现版本来确定的。
+4、可以通过将spring.main.log-startup-info设置为false来关闭启动信息日志记录。
+5、这也将关闭应用程序的活动概要文件的日志记录。
+6、要在启动时添加额外的日志记录，你可以在SpringApplication的子类中重写logStartupInfo(boolean)。
+```
+
+- 如果你使用Java -jar运行你的应用程序，你可以启用debug属性，如下所示:
+
+```
+$ java -jar myproject-0.0.1-SNAPSHOT.jar --debug
+```
+
+**1.2. Lazy Initialization**
+
+- Properties
+
+```
+spring.main.lazy-initialization=true
+```
+
+
+
+**1.3. Customizing the Banner**
+
+
+
+
+
+
 
 ## Web
 
